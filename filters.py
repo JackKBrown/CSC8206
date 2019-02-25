@@ -1,37 +1,44 @@
 from PIL import Image
 
-def increase_val():
-	im = Image.open('images_cropped/10859.ppm') 
+def modify_val(image_path, value):
+
+	# get original image
+	im = Image.open(image_path) 
 	pix = im.load()
 
-	w, h = im.size
+	width, height = im.size
 
-	for x in range(w):
-		for y in range(h):
-			t = pix[x,y]
-			l = list(t)
-			for i in range(len(l)):
-				l[i] += 100
+	for x in range(width):
+		for y in range(height):
+			pixel = pix[x,y]
+			rgb_vals = list(pixel)
+			for i in range(len(rgb_vals)):
+				rgb_vals[i] += value
 			
-			pix[x,y] = tuple(l)
+			pix[x,y] = tuple(rgb_vals)
 			
 			
-	print(pix[10,20])
 	im.show()  
 	
+def mask(image_path, mask_path, threshold):
 
-def noise_mask():
-	im = Image.open('images_cropped/10859.ppm')
-	noise = Image.open('images_noise/white_noise.png')
+	# get original image
+	im = Image.open(image_path)
 	pix = im.load()
-	npix = noise.load()
-
-	w, h = im.size
-	for x in range(w):
-		for y in range(h):
-			if (npix[x,y] < (100,0,0)):
+	
+	# get image mask
+	mask = Image.open(mask_path)
+	mask_pix = mask.load()
+	
+	# create masked image
+	width, height = im.size
+	for x in range(width):
+		for y in range(height):
+			if (mask_pix[x,y] > (threshold,0,0)): # lower threshold = more mask
 				pix[x,y] = (0,0,0)
-			
+	
 	im.show()
 	
-noise_mask()
+################	
+#modify_val('images_cropped/10859.ppm', -100)
+mask('images_cropped/10859.ppm', 'images_noise/circle_mask.png', 220)
