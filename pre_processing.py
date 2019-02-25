@@ -36,7 +36,9 @@ for i in range(FOLDERS):
         img_new = img_orig.crop(crop_area).resize(TARGET_RESOLUTION)# have a look into PIL.Image.LANCZOS ?
 
         # save with a target resolution
-        img_new.save(CROPPED_IMG_PATH + str(gl_it) + '.ppm')
+
+        #img_new.save(CROPPED_IMG_PATH + str(gl_it) + '.ppm') # use for aggregated dir save
+        img_new.save(img_path.replace('.ppm', '_cropped.ppm'))
         gl_it += 1
 
 # saves the [id, class] pairs as csv
