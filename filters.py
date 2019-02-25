@@ -1,5 +1,4 @@
 from PIL import Image
-from PIL import PpmImagePlugin
 
 def modify_val(image_path, value):
 
