@@ -90,3 +90,9 @@ def randomNoise(img, p=1, am=255, x1=-1, x2=-1, y1=-1, y2=-1):
     
     #Print total noise that was added/subtracted
     print("Total Noise: ", totalNoise)
+	
+	
+#Examples
+randomNoise(grey,1,50) 
+
+randomNoise(grey,1,50,10,30,10,30) 
