@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+from PIL import Image
 
 #Initialise an array of size 40x40, with all elements being 120
 #This represents an image of 40px by 40px in a mid-grey colour (assuming 0-255 value range)
@@ -9,6 +10,10 @@ for i in range(40):
     for j in range(40):
         grey[i,j] = 120
 		
+#Import a specified img using PIL
+image_path = 'images_cropped/10859.ppm'
+img = Image.open(image_path)
+		
 #Function to create random noise for a given image, with various parameters described below
 #min/maxPixVal, minimum and maximum value for each pixel
 #p, probability a pixel will have noise applied. am, the max amount of noise, will generate uniformly from 1 to am
@@ -16,8 +21,9 @@ for i in range(40):
 #loop, specifies if you'd like noise to loop or max/min out at value bounds
 #The function will also display the total amount of noise applied
 def randomNoise(img, maxPixVal=255, minPixVal=0, p=0.1, am=255, x1=-1, x2=-1, y1=-1, y2=-1, loop=True):
-    #Copy image to new array to allow noise to be added
-    imgNoise = np.copy(img)
+
+	noiseImg = im.load()
+	originalImg = im.load()
     
     #If x1,x2,y1,y2 not specified, set as 0 and image size respectively (to apply noise to whole image)
     if(x1 < 0):
