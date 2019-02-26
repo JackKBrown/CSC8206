@@ -72,7 +72,7 @@ def randomNoise(img, maxPixVal=255, minPixVal=0, p=0.1, am=255, x1=-1, x2=-1, y1
                         #If looping
                         if(loop):
                             #New noisy value is the value of noise after addition
-                            imgNoise[i,j] = 255 - (newVal % maxPixVal)
+                            imgNoise[i,j] = newVal % maxPixVal
                         #Else, not looping
                         else:
                             #Set as min pixel value
@@ -102,5 +102,4 @@ def randomNoise(img, maxPixVal=255, minPixVal=0, p=0.1, am=255, x1=-1, x2=-1, y1
 
 
 #Examples
-randomNoise(grey, p=1, am=55555555) 
-
+randomNoise(grey, p=1, am=1000) 
