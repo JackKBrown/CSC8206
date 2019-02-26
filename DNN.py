@@ -1,29 +1,78 @@
+#######################################################################
+#Imports and Constants
+######################################################################
+import numpy as np
 import tensorflow as tf
+from keras.preprocessing.image import ImageDataGenerator
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Flatten
+import matplotlib.pyplot as plt
+from keras.optimizers import SGD
+from keras.optimizers import SGD
+
+#this is the file containing the image data
+ORIGINDIR='images_orig/'
+
+#array of all the class dir names in ORIGINDIR
+signs_classes=['00000','00001','00002','00003','00004',
+        '00005','00006','00007','00008','00009',
+        '00010','00011','00012','00013','00014',
+        '00015','00016','00017','00018','00019',
+        '00020','00021','00022','00023','00024',
+        '00025','00026','00027','00028','00029',
+        '00030','00031','00032','00033','00034',
+        '00035','00036','00037','00038','00039',
+        '00040','00041','00042']
+
+BATCH=19000
 
 
 
-#preparring the data for input
-(x_train, y_train),(x_test, y_test) = mnist.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
+#######################################################################
+#Data preperation
+######################################################################
 
-def model1():
-    #defining the model
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Flatten(input_shape=(40, 40)),
-        tf.keras.layers.Dense(512, activation=tf.nn.relu),
-        tf.keras.layers.Dropout(0.2), 
-        tf.keras.layers.Dense(512, activatoin=tf.nn.relu), 
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(43, activation=tf.nn.softmax)
-    ])
-    return model
+#IDG lets you pull images from a directory and label them according to the subdir
+#see keras ImageDataGenerator parameters for more customisability
+IDG = ImageDataGenerator( rescale=1./255)
 
-model = model
-#execution
-#model.compile(optimizer='adam',
-#              loss='sparse_categorical_crossentropy',
-#              metrics=['accuracy'])
-#
-#model.fit(x_train, y_train, epochs=5)
-#model.evaluate(x_test, y_test)
+train_datagen = IDG.flow_from_directory(
+        directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
 
+
+#fetch a batch of images and labels
+images, labels = next(train_datagen)
+test_images, test_labels = next(train_datagen)
+print(images.shape)
+
+print(labels)
+
+
+#######################################################################
+#DNN model
+######################################################################
+
+#Define the DNN model used
+model = Sequential()
+
+#input is a 40 by 40 rgb image
+model.add(Flatten(input_shape=(40, 40, 3)))
+model.add(Dense(256, activation='relu'))
+model.add(Dense(256, activation='relu'))
+model.add(Dense(256, activation='relu'))
+#dropout?
+model.add(Dense(43, activation='softmax'))
+
+#these two lines will show a sample image from the dataset
+#plt.imshow(images[0])
+#plt.show()
+
+def compile_and_fit(images, labels, test_images, test_labels, model):
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+
+    model.fit(images, labels, batch_size=32, epochs=10)
+    score = model.evaluate(test_images, test_labels, batch_size=32)
+    print(score)
+
+compile_and_fit(images, labels, test_images, test_labels, model)
