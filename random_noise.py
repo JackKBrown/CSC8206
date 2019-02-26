@@ -10,12 +10,11 @@ for i in range(40):
     for j in range(40):
         grey[i,j] = 120
 		
-#Function to create random noise for a given image (np array), with parameters for probability of noise
-#for a specific pixel, p, and an amount of noise, am. The amount represents the upperbound of possible noise applied,
-#for each pixel, being randomly chosen from 1 to amount if a pixel has noise applied. 
-#In addition this function allows you to specify the area of the image you wish to apply noise to.
-#Also provides a boolean parameter loop, if true when calculating the final noisy value, when out of bounds it will loop to
-#the next value
+#Function to create random noise for a given image, with various parameters described below
+#min/maxPixVal, minimum and maximum value for each pixel
+#p, probability a pixel will have noise applied. am, the max amount of noise, will generate uniformly from 1 to am
+#x1,x2,y1,y2, allows specification of area of image for noise to be applied, a number <0 will do the bounds of the image
+#loop, specifies if you'd like noise to loop or max/min out at value bounds
 #The function will also display the total amount of noise applied
 def randomNoise(img, maxPixVal=255, minPixVal=0, p=0.1, am=255, x1=-1, x2=-1, y1=-1, y2=-1, loop=True):
     #Copy image to new array to allow noise to be added
