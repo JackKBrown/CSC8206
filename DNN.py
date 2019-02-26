@@ -1,3 +1,6 @@
+#######################################################################
+#Imports and Constants
+######################################################################
 import numpy as np
 import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
@@ -7,11 +10,10 @@ import matplotlib.pyplot as plt
 from keras.optimizers import SGD
 from keras.optimizers import SGD
 
-#TRAINDIR='cvd/train/'
+#this is the file containing the image data
 ORIGINDIR='images_orig/'
-TRAINDIR='sss/'
-TESTDIR=''
 
+#array of all the class dir names in ORIGINDIR
 signs_classes=['00000','00001','00002','00003','00004',
         '00005','00006','00007','00008','00009',
         '00010','00011','00012','00013','00014',
@@ -22,11 +24,20 @@ signs_classes=['00000','00001','00002','00003','00004',
         '00035','00036','00037','00038','00039',
         '00040','00041','00042']
 
+BATCH=19000
+
+
+
+#######################################################################
+#Data preperation
+######################################################################
+
+#IDG lets you pull images from a directory and label them according to the subdir
 #see keras ImageDataGenerator parameters for more customisability
 IDG = ImageDataGenerator( rescale=1./255)
 
 train_datagen = IDG.flow_from_directory(
-        directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=1000)
+        directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
 
 
 #fetch a batch of images and labels
@@ -37,11 +48,17 @@ print(images.shape)
 print(labels)
 
 
+#######################################################################
+#DNN model
+######################################################################
+
 #Define the DNN model used
 model = Sequential()
 
-#currentyl just 1 hidden layer for proof of concept
+#input is a 40 by 40 rgb image
 model.add(Flatten(input_shape=(40, 40, 3)))
+model.add(Dense(256, activation='relu'))
+model.add(Dense(256, activation='relu'))
 model.add(Dense(256, activation='relu'))
 #dropout?
 model.add(Dense(43, activation='softmax'))
