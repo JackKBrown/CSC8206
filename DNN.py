@@ -76,3 +76,10 @@ def compile_and_fit(images, labels, test_images, test_labels, model):
     print(score)
 
 compile_and_fit(images, labels, test_images, test_labels, model)
+
+model_json = model.to_json()
+with open("DNN.json", "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+model.save_weights("DNN_weights.h5")
+print("Saved model to disk")
