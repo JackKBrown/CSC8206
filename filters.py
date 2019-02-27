@@ -1,4 +1,5 @@
 from PIL import Image
+from math import sqrt
 
 def modify_val(image_path, value):
 
@@ -26,6 +27,9 @@ def mask(image_path, mask_path, mask_translation, threshold):
 	im = Image.open(image_path)
 	pix = im.load()
 	
+	# to calculate the difference later
+	old_pix = Image.open(image_path).load()
+	
 	# get translated image mask
 	mask_pix = translate_img(mask_path, mask_translation[0], mask_translation[1])
 	
@@ -36,6 +40,20 @@ def mask(image_path, mask_path, mask_translation, threshold):
 			if (mask_pix[x,y] > (threshold,0,0)): # lower threshold = more mask
 				pix[x,y] = (0,0,0)
 	
+	# calculate difference between original and final picture
+	total_diff = 0
+	for x in range(width):
+		for y in range(height):
+			rd = old_pix[x,y][0] - pix[x,y][0]
+			gd = old_pix[x,y][1] - pix[x,y][1]
+			bd = old_pix[x,y][2] - pix[x,y][2]
+			
+			total_diff += sqrt(pow(rd,2)+pow(gd,2)+pow(bd,2))
+			
+		
+	max_diff = 706676.7294881183 # white to black image
+	diff_percentage = total_diff * 100.0 / max_diff
+	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	im.show()
 	
 def translate_img(image_path, x_translation, y_translation):
@@ -55,7 +73,6 @@ def translate_img(image_path, x_translation, y_translation):
 	for x in range(width):
 		for y in range(height):
 			current_pixel = y * width + x
-			
 			old_pixel = current_pixel - total_translation
 			
 			if (old_pixel >=0 and old_pixel < width * height): # so long as the old pixel is valid
@@ -69,4 +86,4 @@ def translate_img(image_path, x_translation, y_translation):
 
 ################	
 #modify_val('images_cropped/10859.ppm', -100)
-mask('images_cropped/10859.ppm', 'images_noise/circle_mask.png', (10, 10), 220)
+mask('images_cropped/10859.ppm', 'images_noise/circle_mask.png', (10, 10), 230)
