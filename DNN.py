@@ -11,7 +11,7 @@ from keras.optimizers import SGD
 from keras.optimizers import SGD
 
 #this is the file containing the image data
-ORIGINDIR='images_orig/'
+ORIGINDIR='images_oropped/'
 
 #array of all the class dir names in ORIGINDIR
 signs_classes=['00000','00001','00002','00003','00004',
