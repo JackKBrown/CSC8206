@@ -68,7 +68,7 @@ def randomNoise(img, maxRGBVal=255, p=0.1, am=255, x1=-1, x2=-1, y1=-1, y2=-1, l
     print ("Number of Pixels changed: ", pixelsChanged)
 
 
-img = Image.open('images_cropped/0.ppm')
+img = Image.open('images_cropped/00000/00000_00000.ppm')
 
 #Examples
-randomNoise(img, p=1, am=100) 
+randomNoise(img, p=1, am=100)
