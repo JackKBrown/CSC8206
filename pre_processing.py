@@ -1,6 +1,7 @@
 from PIL import Image
 import scipy.misc as smp
 import csv
+import os
 
 TARGET_RESOLUTION = (40, 40)
 
@@ -21,6 +22,11 @@ for i in range(FOLDERS):
     print('Working on ' + path)
 
     csv_path = path + 'GT-000' + _it + '.csv'
+
+    # ensure there is a dir for the class in cropped imgs dir
+    if not os.path.exists(CROPPED_IMG_PATH + _it):
+        os.makedirs(CROPPED_IMG_PATH + '000' + _it)
+
     with open(csv_path, newline='') as csvfile:
         data = list(csv.reader(csvfile))
 
@@ -38,7 +44,8 @@ for i in range(FOLDERS):
         # save with a target resolution
 
         #img_new.save(CROPPED_IMG_PATH + str(gl_it) + '.ppm') # use for aggregated dir save
-        img_new.save(img_path.replace('.ppm', '_cropped.ppm'))
+        #img_new.save(img_path.replace('.ppm', '_cropped.ppm'))
+        img_new.save(CROPPED_IMG_PATH + '000' + str(_it) + '/' + line_parts[0])
         gl_it += 1
 
 # saves the [id, class] pairs as csv
