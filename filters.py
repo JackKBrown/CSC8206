@@ -1,4 +1,5 @@
 from PIL import Image
+from keras.preprocessing import image
 from math import sqrt
 
 def modify_val(image_path, value):
@@ -83,6 +84,17 @@ def translate_img(image_path, x_translation, y_translation):
 	im.show()
 	
 	return pix
+
+def extract_noise_mask(orig_image_path, hacked_image_path):
+	im1 = image.load_img(orig_image_path)  # open the image
+	pixels1 = image.img_to_array(im1)  # extracts the pixels
+
+	im2 = image.load_img(hacked_image_path)  # open the image
+	pixels2 = image.img_to_array(im2)  # extracts the pixels
+
+	noise = []
+	for p1, p2 in zip(pixels1, pixels2):
+		noise += p1 - p2
 
 ################	
 #modify_val('images_cropped/10859.ppm', -100)

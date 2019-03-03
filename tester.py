@@ -5,8 +5,9 @@ import numpy as np
 import tensorflow as tf
 from keras.preprocessing import image
 from keras.models import model_from_json
+from utils import load_data
 
-
+IMG_PATH = 'images_test/'
 
 # Training Params
 num_steps = 70000
@@ -14,7 +15,7 @@ batch_size = 128
 learning_rate = 0.0002
 
 # Dims and topology
-IMG_DIM = 4800 # 40*40*3
+IMG_DIM = 784#4800 # 40*40*3
 GEN_HID_UN1 = 256
 GEN_HID_UN2 = 256
 DIS_HID_UN1 = 256
@@ -27,11 +28,11 @@ def glorot_init(shape):
 # Store layers weight & bias
 weights = {
     'gen_hidden1': tf.Variable(glorot_init([NOISE_DIM, GEN_HID_UN1])),
-    'gen_hidden2': tf.Variable(glorot_init([NOISE_DIM, GEN_HID_UN2])),
-    'gen_out': tf.Variable(glorot_init([GEN_HID_UN1, IMG_DIM])),
+    'gen_hidden2': tf.Variable(glorot_init([GEN_HID_UN1, GEN_HID_UN2])),
+    'gen_out': tf.Variable(glorot_init([GEN_HID_UN2, IMG_DIM])),
     'disc_hidden1': tf.Variable(glorot_init([IMG_DIM, DIS_HID_UN1])),
-    'disc_hidden2': tf.Variable(glorot_init([IMG_DIM, DIS_HID_UN2])),
-    'disc_out': tf.Variable(glorot_init([DIS_HID_UN1, 1])),
+    'disc_hidden2': tf.Variable(glorot_init([DIS_HID_UN1, DIS_HID_UN2])),
+    'disc_out': tf.Variable(glorot_init([DIS_HID_UN2, 1])),
 }
 biases = {
     'gen_hidden1': tf.Variable(tf.zeros([GEN_HID_UN1])),
@@ -69,13 +70,21 @@ def discriminator(x):
     return out_layer
 
 def __main__():
-    train_datagen = IDG.flow_from_directory(
-            directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
+    # train_datagen = IDG.flow_from_directory(
+    #         directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
+
+    # loads in all the data
+    images, labels = load_data(IMG_PATH)
+
+    print(str(images[0]))
+
+    #from tensorflow.examples.tutorials.mnist import input_data
+    #mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
     # Build Networks
     # Network Inputs
-    gen_input = tf.placeholder(tf.float32, shape=[None, noise_dim], name='input_noise')
-    disc_input = tf.placeholder(tf.float32, shape=[None, image_dim], name='disc_input')
+    gen_input = tf.placeholder(tf.float32, shape=[None, NOISE_DIM], name='input_noise')
+    disc_input = tf.placeholder(tf.float32, shape=[None, IMG_DIM], name='disc_input')
 
     # Build Generator Network
     gen_sample = generator(gen_input)
@@ -117,48 +126,67 @@ def __main__():
     sess.run(init)
 
     # Training
-    for i in range(1, num_steps+1):
-        # Prepare Data
-        # Get the next batch of MNIST data (only images are needed, not labels)
-        batch_x, _ = mnist.train.next_batch(batch_size)
-        # Generate noise to feed to the generator
-        z = np.random.uniform(-1., 1., size=[batch_size, noise_dim])
-
-        # Train
-        feed_dict = {disc_input: batch_x, gen_input: z}
-        _, _, gl, dl = sess.run([train_gen, train_disc, gen_loss, disc_loss],
-                                feed_dict=feed_dict)
-        if i % 2000 == 0 or i == 1:
-            print('Step %i: Generator Loss: %f, Discriminator Loss: %f' % (i, gl, dl))
+    # for i in range(1, num_steps+1):
+    #     # Prepare Data
+    #     # Get the next batch of MNIST data (only images are needed, not labels)
+    #     batch_x, _ = mnist.train.next_batch(batch_size)
+    #     # Generate noise to feed to the generator
+    #     z = np.random.uniform(-1., 1., size=[batch_size, NOISE_DIM])
+    #
+    #     # Train
+    #     feed_dict = {disc_input: batch_x, gen_input: z}
+    #     _, _, gl, dl = sess.run([train_gen, train_disc, gen_loss, disc_loss],
+    #                             feed_dict=feed_dict)
+    #     if i % 2000 == 0 or i == 1:
+    #         print('Step %i: Generator Loss: %f, Discriminator Loss: %f' % (i, gl, dl))
 
 
     # used image
-    IMG_PATH = 'images_orig/00000/00000_00000_cropped.ppm'
+    # IMG_PATH = 'images_orig/00000/00000_00000_cropped.ppm'
+    #
+    #
+    # # load json and create model
+    # json_file = open('DNN.json', 'r')
+    # loaded_model_json = json_file.read()
+    # json_file.close()
+    # model = model_from_json(loaded_model_json)
+    # # load weights into new model
+    # model.load_weights("DNN_weights.h5")
+    # print("Loaded model from disk")
+    #
+    # img = image.load_img(IMG_PATH, target_size=(40, 40))
+    # input_image = image.img_to_array(img)
+    #
+    # # standartise
+    # input_image /= 255.
+    #
+    # # add batch size dim
+    # input_image = np.expand_dims(input_image, axis=0)
+    #
+    # predictions = model.predict(input_image)
+    #
+    # # Convert the predictions into text and print them
+    # class_id = np.where(predictions == np.amax(predictions))[0][0]
+    # print(str(class_id) + ' class predicted with confidence of ' + str(predictions[0][class_id]))
 
-
-    # load json and create model
-    json_file = open('DNN.json', 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
-    # load weights into new model
-    model.load_weights("DNN_weights.h5")
-    print("Loaded model from disk")
-
-    img = image.load_img(IMG_PATH, target_size=(40, 40))
-    input_image = image.img_to_array(img)
-
-    # standartise
-    input_image /= 255.
-
-    # add batch size dim
-    input_image = np.expand_dims(input_image, axis=0)
-
-    predictions = model.predict(input_image)
-
-    # Convert the predictions into text and print them
-    class_id = np.where(predictions == np.amax(predictions))[0][0]
-    print(str(class_id) + ' class predicted with confidence of ' + str(predictions[0][class_id]))
+    # Testing
+    # Generate images from noise, using the generator network.
+    # n = 6
+    # canvas = np.empty((28 * n, 28 * n))
+    # for i in range(n):
+    #     # Noise input.
+    #     z = np.random.uniform(-1., 1., size=[n, NOISE_DIM])
+    #     # Generate image from noise.
+    #     g = sess.run(gen_sample, feed_dict={gen_input: z})
+    #     # Reverse colours for better display
+    #     g = -1 * (g - 1)
+    #     for j in range(n):
+    #         # Draw the generated digits
+    #         canvas[i * 28:(i + 1) * 28, j * 28:(j + 1) * 28] = g[j].reshape([28, 28])
+    #
+    # plt.figure(figsize=(n, n))
+    # plt.imshow(canvas, origin="upper", cmap="gray")
+    # plt.show()
 
 if __name__ == '__main__':
-    main()
+   __main__()
