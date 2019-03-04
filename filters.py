@@ -56,6 +56,32 @@ def mask(image_path, mask_path, mask_translation, threshold):
 	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	im.show()
 	
+def mask_blend(image_path, mask_path):
+	# get original image
+	im = Image.open(image_path)
+	pix = im.load()
+	
+	# to calculate the difference later
+	old_pix = Image.open(image_path).load()
+	
+	# get image mask
+	mask_pix = Image.open(mask_path).load()
+	
+	
+	width, height = im.size
+	total_diff = 0
+	for x in range(width):
+		for y in range(height):
+			a = mask_pix[x,y][3]
+			r = mask_pix[x,y][0] + pix[x,y][0] / 2
+			g = mask_pix[x,y][1] + pix[x,y][1] / 2
+			b = mask_pix[x,y][2] + pix[x,y][2] / 2
+			
+			pix[x,y] = (int(r),int(g),int(b))
+				
+	im.show()
+	
+	
 def translate_img(image_path, x_translation, y_translation):
 	# to do: fix horizontal wrapping
 
@@ -86,4 +112,4 @@ def translate_img(image_path, x_translation, y_translation):
 
 ################	
 #modify_val('images_cropped/10859.ppm', -100)
-mask('images_cropped/10859.ppm', 'images_noise/circle_mask.png', (10, 10), 230)
+mask_blend('images_cropped/00000/00000_00011.ppm', 'images_noise/circle_mask.png')
