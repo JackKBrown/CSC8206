@@ -1,4 +1,5 @@
 # code mostly taken from https://medium.com/@ageitgey/machine-learning-is-fun-part-8-how-to-intentionally-trick-neural-networks-b55da32b7196
+import math
 import numpy as np
 from keras.models import model_from_json
 from keras.preprocessing import image
@@ -6,10 +7,20 @@ from keras.applications import inception_v3
 from keras import backend as K
 import tensorflow as tf
 from PIL import Image
+import argparse
+
+parser = argparse.ArgumentParser(description='Craft adversarial examples')
+parser.add_argument('--img',dest='image_path', type=str, default='images_cropped/00000/00000_00000.ppm', help='Image path')
+parser.add_argument('--target',dest='target_cls', type=int, default=-1, help='Target class, -1 for minimizing the original class')
+parser.add_argument('--cost',dest='min_cost', type=float, default=0.90, help='Minimum certaintity to stop')
+parser.add_argument('--save',dest='save_as', type=str, default='hacked-img.png', help='Where to save the perturbated image')
+parser.add_argument('--clip',dest='clip_range', type=float, default=0.01, help='How much change to allow [0,1]')
+parser.add_argument('--learn-rate',dest='learning_rate', type=float, default=0.1, help='Learning rate')
+
+args = parser.parse_args()
 
 # used image
-IMG_PATH = 'images_cropped/00000/00000_00000.ppm'
-
+IMG_PATH = args.image_path
 
 # load json and create model
 json_file = open('DNN.json', 'r')
@@ -24,36 +35,40 @@ print("Loaded model from disk")
 model_input_layer = model.layers[0].input
 model_output_layer = model.layers[-1].output
 
-# id of the target class
-true_class = 0
-
 # Load the image to hack
-img = image.load_img(IMG_PATH, target_size=(40, 40))
-original_image = image.img_to_array(img)
+original_image = image.img_to_array(image.load_img(IMG_PATH, target_size=(40, 40)))
+img = original_image.copy()
 
-# Scale the image so all pixel intensities are between [-1, 1] as the model expects
-original_image /= 255.
-original_image -= 0.5
-original_image *= 2.
+# Scale the image so all pixel intensities are between [0, 1] as the model expects
+img /= 255.
 
 # Add a 4th dimension for batch size (as Keras expects)
-original_image = np.expand_dims(original_image, axis=0)
+img = np.expand_dims(img, axis=0)
+
+# id of the target class = class predicted on original img
+_pred = model.predict(img)[0]
+true_class = list(_pred).index(np.amax(_pred))
+print('Original class: ' + str(true_class))
 
 # Pre-calculate the maximum change we will allow to the image
 # We'll make sure our hacked image never goes past this so it doesn't look funny.
 # A larger number produces an image faster but risks more distortion.
-max_change_above = original_image + 0.01
-max_change_below = original_image - 0.01
+max_change_above = img + args.clip_range
+max_change_below = img - args.clip_range
 
 # Create a copy of the input image to hack on
-hacked_image = np.copy(original_image)
+hacked_image = np.copy(img)
 
 # How much to update the hacked image in each iteration
-learning_rate = 0.1
+learning_rate = abs(args.learning_rate)
 
 # Define the cost function.
-# Our 'cost' will be the likelihood out image is not the original (ground truth) class
-cost_function = 1 - model_output_layer[0, true_class]
+if args.target_cls >= 0:
+    # Our cost will be the likelihood of the image being the target class
+    cost_function = model_output_layer[0, args.target_cls]
+else:
+    # Our 'cost' will be the likelihood out image is not the original (ground truth) class
+    cost_function = 1 - model_output_layer[0, true_class]
 
 # We'll ask Keras to calculate the gradient based on the input image and the currently predicted class
 # In this case, referring to "model_input_layer" will give us back image we are hacking.
@@ -63,10 +78,11 @@ gradient_function = K.gradients(cost_function, model_input_layer)[0]
 grab_cost_and_gradients_from_model = K.function([model_input_layer, K.learning_phase()], [cost_function, gradient_function])
 
 cost = 0.0
+i = 0
 
 # In a loop, keep adjusting the hacked image slightly so that it tricks the model more and more
 # until it gets to given confidence
-while cost < 0.80:
+while cost < abs(args.min_cost):
     # Check how close the image is to our target class and grab the gradients we
     # can use to push it one more step in that direction.
     # Note: It's really important to pass in '0' for the Keras learning mode here!
@@ -78,16 +94,37 @@ while cost < 0.80:
 
     # Ensure that the image doesn't ever change too much to either look funny or to become an invalid image
     hacked_image = np.clip(hacked_image, max_change_below, max_change_above)
-    hacked_image = np.clip(hacked_image, -1.0, 1.0)
+    hacked_image = np.clip(hacked_image, 0, 1.0)
 
-    print("Model's predicted likelihood that the image is not the original class: {:.8}%".format(cost * 100))
+    if args.target_cls < 0:
+        print(str(i) + ": Likelihood that the image is not the original class: {:.8}%".format(cost * 100))
+    else:
+        print(str(i) + ': Likelihood that the image is the target class: {:.8}%'.format(cost * 100))
+    i += 1
 
 # De-scale the image's pixels from [-1, 1] back to the [0, 255] range
-img = hacked_image[0]
-img /= 2.
-img += 0.5
-img *= 255.
+imgh = hacked_image[0]
+imgh *= 255.
+
+# compare to the original
+val = []
+pert1 = 0
+for xo, xh in zip(original_image, imgh):
+    val_ = ()
+    for _xo, _xh in zip(xo, xh):
+        val1 = abs(_xo - _xh)
+        pert1 += val1
+        val_ += (val1,)
+        # print(str(_xo) + '-' + str(_xh) + '=' + str(val1))
+    val += val_
+pert = 0
+for p in pert1:
+    pert += p
+
+# val = np.array(val).reshape(40, 40, 3)#.astype(int)
+# print(str(val))
+print('Total perturbation: ' + str(pert))
 
 # Save the hacked image!
-im = Image.fromarray(img.astype(np.uint8))
-im.save("hacked-image.png")
+im = Image.fromarray(imgh.astype(np.uint8))
+im.save(args.save_as)
