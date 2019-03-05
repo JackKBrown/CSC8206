@@ -10,12 +10,13 @@ from PIL import Image
 import argparse
 
 parser = argparse.ArgumentParser(description='Craft adversarial examples')
-parser.add_argument('--img',dest='image_path', type=str, default='images_cropped/00000/00000_00000.ppm', help='Image path')
+parser.add_argument('--img',dest='image_path', type=str, default='images_cropped2/00000/00000_00000.ppm', help='Image path')
 parser.add_argument('--target',dest='target_cls', type=int, default=-1, help='Target class, -1 for minimizing the original class')
 parser.add_argument('--cost',dest='min_cost', type=float, default=0.90, help='Minimum certaintity to stop')
 parser.add_argument('--save',dest='save_as', type=str, default='hacked-img.png', help='Where to save the perturbated image')
 parser.add_argument('--clip',dest='clip_range', type=float, default=0.01, help='How much change to allow [0,1]')
 parser.add_argument('--learn-rate',dest='learning_rate', type=float, default=0.1, help='Learning rate')
+parser.add_argument('--noises',dest='noises', type=str, default='', help='Where to save the scaled noise')
 
 args = parser.parse_args()
 
@@ -106,25 +107,25 @@ while cost < abs(args.min_cost):
 imgh = hacked_image[0]
 imgh *= 255.
 
-# compare to the original
-val = []
-pert1 = 0
-for xo, xh in zip(original_image, imgh):
-    val_ = ()
-    for _xo, _xh in zip(xo, xh):
-        val1 = abs(_xo - _xh)
-        pert1 += val1
-        val_ += (val1,)
-        # print(str(_xo) + '-' + str(_xh) + '=' + str(val1))
-    val += val_
-pert = 0
-for p in pert1:
-    pert += p
+# do we want the scaled noise?
+if args.noises:
+    # compare to the original
+    dif_img = original_image - imgh
 
-# val = np.array(val).reshape(40, 40, 3)#.astype(int)
-# print(str(val))
+    _min = np.amin(dif_img)
+    _max = np.amax(dif_img)
+
+    scaled_noise = np.array(list(map(lambda x: ((x -_min) / abs(_max  - _min)) * 255, dif_img)))
+
+    # Save the scaled up noise
+    im = Image.fromarray(imgh.astype(np.uint8))
+    im.save(args.save_as)
+
+pert = np.sum(np.absolute(dif_img))
+
 print('Total perturbation: ' + str(pert))
 
 # Save the hacked image!
 im = Image.fromarray(imgh.astype(np.uint8))
 im.save(args.save_as)
+
