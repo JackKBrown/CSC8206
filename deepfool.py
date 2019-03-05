@@ -10,7 +10,7 @@ eta = 0.02
 clip_min = 0
 clip_max = 1
 epochs = 100
-min_prob = .5
+min_prob = 0.1
 
 img_path = 'images_cropped2/00000/00000_00000.ppm'
 model_path = 'DNN.json'
@@ -98,8 +98,8 @@ xadv = tf.stop_gradient(x +  tf.clip_by_value(noise*(1+eta), clip_min, clip_max)
 # xadv = tf.clip_by_value(xadv, clip_min, clip_max)
 
 # noise scaling
-_min = tf.cast(tf.argmin(noise), dtype=tf.float32)
-_max = tf.cast(tf.argmax(noise), dtype=tf.float32)
+_min = tf.cast(tf.reduce_min(noise), dtype=tf.float32)
+_max = tf.cast(tf.reduce_max(noise), dtype=tf.float32)
 
 noise = tf.cast(noise, dtype=tf.float32)
 scaled_noise = tf.map_fn(lambda x: ((x - _min) / abs(_max - _min)) * 255, noise)
@@ -136,8 +136,10 @@ with sess.as_default():
     im = Image.fromarray(xadv.astype(np.uint8))
     im.save('deepfool-img.png')
 
-    print('sc_noise: ' + str(scaled_noise))
-    print('noise: ' + str(noise.eval()))
+    print('noise max: ' + str(_max.eval()))
+    print('noise min: ' + str(_min.eval()))
+    # print('sc_noise: ' + str(scaled_noise))
+    # print('noise: ' + str(noise.eval()))
     # xadv2 = img + (noise.eval() * (1+eta))
     # print('xadv2: ' + str(xadv2*255))
     # print('orig: ' + str(img))
