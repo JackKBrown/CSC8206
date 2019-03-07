@@ -57,6 +57,36 @@ def mask(image_path, mask_path, mask_translation, threshold):
 	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	im.show()
 	
+def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
+	# get original image
+	im = Image.open(image_path)
+	pix = im.load()
+	
+	# to calculate the difference later
+	old_pix = Image.open(image_path).load()
+	
+	# get image mask
+	mask_pix = translate_img(mask_path, mask_translation[0], mask_translation[1])
+	
+	width, height = im.size
+	total_diff = 0
+	for x in range(width):
+		for y in range(height):
+			a_mask = mask_transparency / 255
+			r = mask_pix[x,y][0] * a_mask + pix[x,y][0] * (1 - a_mask)
+			g = mask_pix[x,y][1] * a_mask + pix[x,y][1] * (1 - a_mask)
+			b = mask_pix[x,y][2] * a_mask + pix[x,y][2] * (1 - a_mask)
+			
+			total_diff += sqrt(pow(pix[x,y][0] - r,2)+pow(pix[x,y][1] - g,2)+pow(pix[x,y][2] - b,2))
+			#pix[x,y] = (int(r),int(g),int(b))
+				
+	max_diff = 706676.7294881183 # white to black image
+	diff_percentage = total_diff * 100.0 / max_diff
+	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
+	
+	im.show()
+	
+	
 def translate_img(image_path, x_translation, y_translation):
 	# to do: fix horizontal wrapping
 
@@ -80,8 +110,6 @@ def translate_img(image_path, x_translation, y_translation):
 				pix[x,y] = old_pix[old_pixel % width, old_pixel / width]
 			else:
 				pix[x,y] = (0,0,0)
-				
-	im.show()
 	
 	return pix
 
@@ -95,7 +123,7 @@ def extract_noise_mask(orig_image_path, hacked_image_path):
 	noise = []
 	for p1, p2 in zip(pixels1, pixels2):
 		noise += p1 - p2
-
+		
 ################	
 #modify_val('images_cropped/10859.ppm', -100)
-mask('images_cropped/10859.ppm', 'images_noise/circle_mask.png', (10, 10), 230)
+mask_blend('images_orig/00000/00000_00011.ppm', 'images_noise/circle_mask.png', (10, 0), 250)
