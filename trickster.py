@@ -102,30 +102,42 @@ while cost < abs(args.min_cost):
     else:
         print(str(i) + ': Likelihood that the image is the target class: {:.8}%'.format(cost * 100))
     i += 1
+    print(str(model.predict(hacked_image)[0]))
 
 # De-scale the image's pixels from [-1, 1] back to the [0, 255] range
 imgh = hacked_image[0]
+# imgh *= 1.02
 imgh *= 255.
+
+# compare to the original
+dif_img = original_image - imgh
 
 # do we want the scaled noise?
 if args.noises:
-    # compare to the original
-    dif_img = original_image - imgh
-
+    print('Printing scaled noise as ' + args.noises)
     _min = np.amin(dif_img)
     _max = np.amax(dif_img)
 
     scaled_noise = np.array(list(map(lambda x: ((x -_min) / abs(_max  - _min)) * 255, dif_img)))
 
     # Save the scaled up noise
-    im = Image.fromarray(imgh.astype(np.uint8))
-    im.save(args.save_as)
+    im = Image.fromarray(scaled_noise.astype(np.uint8))
+    im.save(args.noises)
 
 pert = np.sum(np.absolute(dif_img))
 
+# print(str(dif_img))
 print('Total perturbation: ' + str(pert))
 
 # Save the hacked image!
 im = Image.fromarray(imgh.astype(np.uint8))
 im.save(args.save_as)
+print('Hacked image save as ' + args.save_as)
 
+# save the model
+model_json = model.to_json()
+with open("DNN3.json", "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+model.save_weights("DNN_weights3.h5")
+print("Saved model to disk")
