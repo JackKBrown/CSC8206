@@ -34,5 +34,7 @@ model = model_from_json(loaded_model_json)
 # load weights into new model
 model.load_weights("DNN_weights.h5")
 #print("Loaded model from disk")
-
-print('Class id: ' + str(list(model.predict(pixels)[0]).index(1)))
+preds = model.predict(pixels)[0]
+# print(str(pixels))
+print(str(preds))
+print('Class id: ' + str(list(preds).index(np.amax(preds))))
