@@ -56,7 +56,7 @@ def mask(image_path, mask_path, mask_translation, threshold):
 	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	im.show()
 	
-def mask_blend(image_path, mask_path):
+def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 	# get original image
 	im = Image.open(image_path)
 	pix = im.load()
@@ -65,20 +65,24 @@ def mask_blend(image_path, mask_path):
 	old_pix = Image.open(image_path).load()
 	
 	# get image mask
-	mask_pix = Image.open(mask_path).load()
-	
+	mask_pix = translate_img(mask_path, mask_translation[0], mask_translation[1])
 	
 	width, height = im.size
 	total_diff = 0
 	for x in range(width):
 		for y in range(height):
-			a = mask_pix[x,y][3]
-			r = mask_pix[x,y][0] + pix[x,y][0] / 2
-			g = mask_pix[x,y][1] + pix[x,y][1] / 2
-			b = mask_pix[x,y][2] + pix[x,y][2] / 2
+			a_mask = mask_transparency / 255
+			r = mask_pix[x,y][0] * a_mask + pix[x,y][0] * (1 - a_mask)
+			g = mask_pix[x,y][1] * a_mask + pix[x,y][1] * (1 - a_mask)
+			b = mask_pix[x,y][2] * a_mask + pix[x,y][2] * (1 - a_mask)
 			
-			pix[x,y] = (int(r),int(g),int(b))
+			total_diff += sqrt(pow(pix[x,y][0] - r,2)+pow(pix[x,y][1] - g,2)+pow(pix[x,y][2] - b,2))
+			#pix[x,y] = (int(r),int(g),int(b))
 				
+	max_diff = 706676.7294881183 # white to black image
+	diff_percentage = total_diff * 100.0 / max_diff
+	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
+	
 	im.show()
 	
 	
@@ -105,11 +109,9 @@ def translate_img(image_path, x_translation, y_translation):
 				pix[x,y] = old_pix[old_pixel % width, old_pixel / width]
 			else:
 				pix[x,y] = (0,0,0)
-				
-	im.show()
 	
 	return pix
 
 ################	
 #modify_val('images_cropped/10859.ppm', -100)
-mask_blend('images_cropped/00000/00000_00011.ppm', 'images_noise/circle_mask.png')
+mask_blend('images_cropped/00000/00000_00011.ppm', 'images_noise/circle_mask.png', (10, 0), 150)
