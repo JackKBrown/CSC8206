@@ -80,6 +80,9 @@ grab_cost_and_gradients_from_model = K.function([model_input_layer, K.learning_p
 
 cost = 0.0
 i = 0
+cost_dif_threshold = 1e-6
+last_cost_cp = 0.0
+cost_cp_freq = 500
 
 # In a loop, keep adjusting the hacked image slightly so that it tricks the model more and more
 # until it gets to given confidence
@@ -107,8 +110,14 @@ while cost < abs(args.min_cost):
     if cur_pred != true_class:
         print('Predictor is already being fooled!')
         break
+    if i % cost_cp_freq == 0:
+        print(str(abs(last_cost_cp - cost)))
+        if abs(last_cost_cp - cost) < cost_dif_threshold:
+            print('Image seem not to be improving anymore, early termination')
+            break
+        last_cost_cp = cost
     i += 1
-    print(str(model.predict(hacked_image)[0]))
+    # print(str(model.predict(hacked_image)[0]))
 
 # De-scale the image's pixels from [-1, 1] back to the [0, 255] range
 imgh = hacked_image[0]
