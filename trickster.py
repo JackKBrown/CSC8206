@@ -97,10 +97,16 @@ while cost < abs(args.min_cost):
     hacked_image = np.clip(hacked_image, max_change_below, max_change_above)
     hacked_image = np.clip(hacked_image, 0, 1.0)
 
+    _pred = model.predict(hacked_image)[0]
+    cur_pred = list(_pred).index(np.amax(_pred))
+
     if args.target_cls < 0:
         print(str(i) + ": Likelihood that the image is not the original class: {:.8}%".format(cost * 100))
     else:
         print(str(i) + ': Likelihood that the image is the target class: {:.8}%'.format(cost * 100))
+    if cur_pred != true_class:
+        print('Predictor is already being fooled!')
+        break
     i += 1
     print(str(model.predict(hacked_image)[0]))
 
