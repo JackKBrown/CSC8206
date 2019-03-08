@@ -147,9 +147,10 @@ def predict(img_path):
 	# load weights into new model
 	model.load_weights("DNN_weights.h5")
 	#print("Loaded model from disk")
+	pred = model.predict(pixels)
 
-	print('Class id: ', (list(model.predict(pixels)[0]).index(1)))
-	return list(model.predict(pixels)[0]).index(1)
+	print('Class id: ', pred[0][1])
+	return int(pred[0][1])
 ################	
 #modify_val('images_cropped/10859.ppm', -100)
 
@@ -157,7 +158,7 @@ class_type = predict('images_orig/00000/00000_00000.ppm')
 
 
 for i in reversed(range(255)):
-	mask('images_orig/00000/00000_00000.ppm', 'images_noise/circle_mask.png', (1, 0), i)
+	mask('images_cropped/00000/00000_00000.ppm', 'images_noise/circle_mask.png', (0, 0), i)
 	if predict('masked_opaque.ppm') is not class_type:
 		Image.open('masked_opaque.ppm').show()
 		break
