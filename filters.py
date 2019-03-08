@@ -1,5 +1,8 @@
 from PIL import Image
+from keras.preprocessing import image
+from keras.models import model_from_json
 from math import sqrt
+import numpy as np
 
 def modify_val(image_path, value):
 
@@ -54,7 +57,8 @@ def mask(image_path, mask_path, mask_translation, threshold):
 	max_diff = 706676.7294881183 # white to black image
 	diff_percentage = total_diff * 100.0 / max_diff
 	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
-	im.show()
+	#im.show()
+	im.save("masked_opaque.ppm")
 	
 def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 	# get original image
@@ -71,19 +75,20 @@ def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 	total_diff = 0
 	for x in range(width):
 		for y in range(height):
-			a_mask = mask_transparency / 255
+			a_mask = (mask_transparency / 255) * (mask_pix[x,y][3] / 255)
 			r = mask_pix[x,y][0] * a_mask + pix[x,y][0] * (1 - a_mask)
 			g = mask_pix[x,y][1] * a_mask + pix[x,y][1] * (1 - a_mask)
 			b = mask_pix[x,y][2] * a_mask + pix[x,y][2] * (1 - a_mask)
 			
 			total_diff += sqrt(pow(pix[x,y][0] - r,2)+pow(pix[x,y][1] - g,2)+pow(pix[x,y][2] - b,2))
-			#pix[x,y] = (int(r),int(g),int(b))
+			pix[x,y] = (int(r),int(g),int(b))
 				
 	max_diff = 706676.7294881183 # white to black image
 	diff_percentage = total_diff * 100.0 / max_diff
 	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	
-	im.show()
+	#im.show()
+	im.save("masked_transparency.ppm")
 	
 	
 def translate_img(image_path, x_translation, y_translation):
@@ -112,6 +117,46 @@ def translate_img(image_path, x_translation, y_translation):
 	
 	return pix
 
+
 ################	
 #modify_val('images_cropped/10859.ppm', -100)
 mask_blend('images_cropped/00000/00000_00011.ppm', 'images_noise/circle_mask.png', (10, 0), 150)
+def extract_noise_mask(orig_image_path, hacked_image_path):
+	im1 = image.load_img(orig_image_path)  # open the image
+	pixels1 = image.img_to_array(im1)  # extracts the pixels
+
+	im2 = image.load_img(hacked_image_path)  # open the image
+	pixels2 = image.img_to_array(im2)  # extracts the pixels
+
+	noise = []
+	for p1, p2 in zip(pixels1, pixels2):
+		noise += p1 - p2
+
+def predict(img_path):
+	im = image.load_img(img_path, target_size=(40,40)) # open the image
+	pixels = image.img_to_array(im) # extracts the pixels
+	pixels = [x/.255 for x in pixels]
+	pixels = np.reshape(pixels, newshape=(40, 40, 3))
+	pixels = np.expand_dims(pixels, axis=0)
+	
+	# load json and create model
+	json_file = open('DNN.json', 'r')
+	loaded_model_json = json_file.read()
+	json_file.close()
+	model = model_from_json(loaded_model_json)
+	# load weights into new model
+	model.load_weights("DNN_weights.h5")
+	#print("Loaded model from disk")
+
+	print('Class id: ', (list(model.predict(pixels)[0]).index(1)))
+	return list(model.predict(pixels)[0]).index(1)
+################	
+#modify_val('images_cropped/10859.ppm', -100)
+
+class_type = predict('images_orig/00000/00000_00000.ppm')
+
+
+for i in reversed(range(255)):
+	mask('images_orig/00000/00000_00000.ppm', 'images_noise/circle_mask.png', (1, 0), i)
+	if predict('masked_opaque.ppm') is not class_type:
+		break
