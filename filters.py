@@ -159,4 +159,5 @@ class_type = predict('images_orig/00000/00000_00000.ppm')
 for i in reversed(range(255)):
 	mask('images_orig/00000/00000_00000.ppm', 'images_noise/circle_mask.png', (1, 0), i)
 	if predict('masked_opaque.ppm') is not class_type:
+		Image.open('masked_opaque.ppm').show()
 		break
