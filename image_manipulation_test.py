@@ -1,7 +1,7 @@
 from PIL import Image
 import scipy.misc as smp
 
-im = Image.open('images_cropped/10859.ppm') # open the image
+im = Image.open('images_cropped/00000/00000_00000.ppm') # open the image
 
 pixels = list(im.getdata()) # extracts the pixels
 width, height = im.size

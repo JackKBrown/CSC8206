@@ -13,6 +13,7 @@ from keras.optimizers import SGD
 #this is the file containing the image data
 ORIGINDIR='images_cropped/'
 
+
 #array of all the class dir names in ORIGINDIR
 signs_classes=['00000','00001','00002','00003','00004',
         '00005','00006','00007','00008','00009',
@@ -34,7 +35,7 @@ BATCH=19000
 
 #IDG lets you pull images from a directory and label them according to the subdir
 #see keras ImageDataGenerator parameters for more customisability
-IDG = ImageDataGenerator( rescale=1./255)
+IDG = ImageDataGenerator(rescale=1./255, dtype='float32')
 
 train_datagen = IDG.flow_from_directory(
         directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
@@ -77,9 +78,10 @@ def compile_and_fit(images, labels, test_images, test_labels, model):
 
 compile_and_fit(images, labels, test_images, test_labels, model)
 
-model_json = model.to_json()
-with open("DNN.json", "w") as json_file:
-    json_file.write(model_json)
-# serialize weights to HDF5
-model.save_weights("DNN_weights.h5")
-print("Saved model to disk")
+# save the model
+# model_json = model.to_json()
+# with open("DNN.json", "w") as json_file:
+#     json_file.write(model_json)
+# # serialize weights to HDF5
+# model.save_weights("DNN_weights.h5")
+# print("Saved model to disk")
