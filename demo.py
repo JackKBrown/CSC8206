@@ -64,7 +64,7 @@ def __main__():
     mask_pred = test_image(img_path, model, True, columns, rows, 3)
     img_path='00000Demo/masked_transparency.ppm'
     maskt_pred = test_image(img_path, model, True, columns, rows, 4)
-    img_path='00000Demo/himg-demo1.ppm'
+    img_path='00000Demo/00000_00006.png'
     fool_pred = test_image(img_path, model, True, columns, rows, 5)
 
     #find max value prediction
