@@ -76,10 +76,16 @@ def __main__():
     print('________________________________________________________________________')
     
     #print off the expected class values
-    print('| 0 at ' + str(unalt_pred[0][0]) +' | 0 at ' + str(rand_pred[0][0])+' | 0 at '+str(mask_pred[0][0])+' | 0 at '+str(maskt_pred[0][0])+' |')
+    print('| 0 at ' + str("%.8f" %unalt_pred[0][0]) +' | 0 at ' + str("%.8f" %rand_pred[0][0])+' | 0 at '+
+          str("%.8f" %mask_pred[0][0])+' | 0 at '+str("%.8f" %maskt_pred[0][0])+' |')
+    
+    print('________________________________________________________________________')
     
     #print off the predicted class values
-    print('| '+str(unalt_class) + ' at ' + str(unalt_pred[0][unalt_class]) +' | '+ str(rand_class) + ' at ' + str(rand_pred[0][rand_class])+' | '+str(mask_class)+' at '+str(mask_pred[0][mask_class])+' | '+str(maskt_class)+' at '+str(maskt_pred[0][maskt_class])+' |')
+    print('| '+str(unalt_class) + ' at ' + str("%.8f" %unalt_pred[0][unalt_class]) +' | '+ 
+          str(rand_class) + ' at ' + str("%.8f" %rand_pred[0][rand_class])+' | '+
+          str(mask_class) + ' at ' + str("%.8f" %mask_pred[0][mask_class])+' | '+
+          str(maskt_class) + ' at ' + str("%.8f" %maskt_pred[0][maskt_class])+' |')
     #todo
     #show images all at the end
     #get output into a nice table
