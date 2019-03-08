@@ -54,7 +54,7 @@ def __main__():
 
     #currently only have 4 images here need to increase if more added
     columns = 2
-    rows = 2
+    rows = 3
 
     img_path='images_cropped/00000/00000_00000.ppm'
     unalt_pred = test_image(img_path, model, True, columns, rows, 1)
@@ -64,33 +64,37 @@ def __main__():
     mask_pred = test_image(img_path, model, True, columns, rows, 3)
     img_path='00000Demo/masked_transparency.ppm'
     maskt_pred = test_image(img_path, model, True, columns, rows, 4)
+    img_path='00000Demo/himg-demo1.ppm'
+    fool_pred = test_image(img_path, model, True, columns, rows, 5)
 
     #find max value prediction
-    #unalt_class = np.where(unalt_pred == np.amax(unalt_pred))[0][0]
     unalt_class=unalt_pred.argmax()
     rand_class=rand_pred.argmax()
     mask_class=mask_pred.argmax()
     maskt_class=maskt_pred.argmax()
+    fool_class=fool_pred.argmax()
+    
     #print(unalt_pred.max())
 
     #print off nice looking table
-    print(' _______________________________________________________________________')
-    print('|      unalt      |       rand      |       mask      |      maskt      |')
-    print(' _______________________________________________________________________')
+    print(' _________________________________________________________________________________________')
+    print('|      unalt      |       rand      |       mask      |      maskt      |       fool      |')
+    print(' _________________________________________________________________________________________')
     
     #print off the expected class values
     print('| 0 at ' + str("%.8f" %unalt_pred[0][0]) +' | 0 at ' + str("%.8f" %rand_pred[0][0])+' | 0 at '+
-          str("%.8f" %mask_pred[0][0])+' | 0 at '+str("%.8f" %maskt_pred[0][0])+' |')
+          str("%.8f" %mask_pred[0][0])+' | 0 at '+str("%.8f" %maskt_pred[0][0])+' | 0 at '+str("%.8f" %fool_pred[0][0])+' |')
     
-    print('________________________________________________________________________')
+    print('__________________________________________________________________________________________')
     
     #print off the predicted class values
     print('| '+str(unalt_class) + ' at ' + str("%.8f" %unalt_pred[0][unalt_class]) +' | '+ 
           str(rand_class) + ' at ' + str("%.8f" %rand_pred[0][rand_class])+' | '+
           str(mask_class) + ' at ' + str("%.8f" %mask_pred[0][mask_class])+' | '+
-          str(maskt_class) + ' at ' + str("%.8f" %maskt_pred[0][maskt_class])+' |')
+          str(maskt_class) + ' at ' + str("%.8f" %maskt_pred[0][maskt_class])+' | '+
+          str(fool_class) + ' at ' + str("%.8f" %fool_pred[0][fool_class])+' |')
     
-    print(' _______________________________________________________________________')
+    print(' _________________________________________________________________________________________')
     
     plt.show()
 
