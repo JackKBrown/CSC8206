@@ -1,104 +1,129 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import random
+from PIL import Image
+import demo as dnn
 
-#Initialise an array of size 40x40, with all elements being 120
-#This represents an image of 40px by 40px in a mid-grey colour (assuming 0-255 value range)
-grey = np.zeros(shape=(40,40))
-for i in range(40):
-    for j in range(40):
-        grey[i,j] = 120
-		
-#Function to create random noise for a given image, with various parameters described below
-#min/maxPixVal, minimum and maximum value for each pixel
-#p, probability a pixel will have noise applied. am, the max amount of noise, will generate uniformly from 1 to am
-#x1,x2,y1,y2, allows specification of area of image for noise to be applied, a number <0 will do the bounds of the image
-#loop, specifies if you'd like noise to loop or max/min out at value bounds
-#The function will also display the total amount of noise applied
-def randomNoise(img, maxPixVal=255, minPixVal=0, p=0.1, am=255, x1=-1, x2=-1, y1=-1, y2=-1, loop=True):
-    #Copy image to new array to allow noise to be added
-    imgNoise = np.copy(img)
+def randomNoise(img, maxRGBVal=255, p=0.1, am=255, x1=-1, x2=-1, y1=-1, y2=-1, loop=False):
+    imgCopy = img.copy()
+    pix = imgCopy.load()
     
-    #If x1,x2,y1,y2 not specified, set as 0 and image size respectively (to apply noise to whole image)
     if(x1 < 0):
         x1 = 0
     if(x2 < 0):
-        x2 = img.shape[0]
+        x2 = img.size[0]
     if(y1 < 0):
         y1 = 0
     if(y2 < 0):
-        y2 = img.shape[1] 
+        y2 = img.size[1]
     
-    #For each pixel in specified area
     for i in range(y1,y2):
         for j in range(x1,x2):
-            #Generate random float from 0 to 1, if less than p, apply noise to the pixel
+            pixel = pix[i,j]
+            rgbVals = list(pixel)
             if(random.uniform(0,1)<=p):
-                #Generate amount of noise to be applied.
-                noise = random.randint(1,am+1)                
-                #Random number of 0 or 1, 0 represents that noise will be added, 1 represents noise will be subtracted
-                r = random.randint(0,1)
-                
-                #Add noise
-                if(r == 0):                        
-                    #Value of pixel after noise applied
-                    newVal = img[i,j]+noise
-                    #If valid pixel value
-                    if(newVal<=maxPixVal):
-                        #Set the new value in imgNoise
-                        imgNoise[i,j] = newVal
-                    #Else, the value is above the pixel value range
-                    else:
-                        #If looping
-                        if(loop):
-                            #New noisy value is the newValue modulo maxPixVal
-                            imgNoise[i,j] = newVal % maxPixVal
-                        #Else, not looping
+                for k in range(len(rgbVals)):                
+                    noise = random.randint(1,am)   
+                    r = random.randint(0,1)
+                    if(r == 0):                        
+                        newVal = rgbVals[k] + noise
+                        if(newVal<=maxRGBVal):
+                                rgbVals[k] = newVal
                         else:
-                            #Set as max value
-                            imgNoise[i,j] = maxPixVal
-                        
-                #Else subtract noise
-                else:
-                    #Calculate noise value after subtraction
-                    newVal = img[i,j]-noise
-                    #If valid pixel value
-                    if(newVal>=minPixVal):
-                        #Set new value in imgNoise
-                        imgNoise[i,j] = newVal
-                    #Else, the value is below the pixel value range
+                            if(loop):
+                                rgbVals[k] = newVal % (maxRGBVal+1)
+                            else:
+                                rgbVals[k] = maxRGBVal
                     else:
-                        #If looping
-                        if(loop):
-                            #New noisy value is the value of noise after addition
-                            imgNoise[i,j] = newVal % maxPixVal
-                        #Else, not looping
+                        newVal = rgbVals[k]-noise
+                        if(newVal>=0):
+                            rgbVals[k] = newVal
                         else:
-                            #Set as min pixel value
-                            imgNoise[i,j] = minPixVal
+                            if(loop):
+                                rgbVals[k] = newVal % (maxRGBVal+1)
+                            else:
+                                rgbVals[k] = 0
+            
+            pix[i,j] = tuple(rgbVals)
 
-    #Running total for noise applied
+    return imgCopy
+
+def compareNoise(origPath, noisePath):
+    origImg = Image.open(origPath)
+    noiseImg = Image.open(noisePath)
+    
+    orig = origImg.load()
+    noise = noiseImg.load()
+    
     totalNoise = 0
     
-    #Below calculates the final effective noise by summing absolute difference for each pixel in
-    #the original image and the noisy image
-    for i in range(y1,y2):
-        for j in range(x1,x2):
-            totalNoise += abs(img[i,j]-imgNoise[i,j])
-    
-    
-    #Below plots and shows the original, and noise adjusted images.
-    plt.imshow(img, cmap='gray', vmin=0, vmax=255)
-    plt.title("Original Image")
-    plt.show()
-    
-    plt.imshow(imgNoise, cmap='gray', vmin=0, vmax=255)
-    plt.title("Noise Image")
-    plt.show()
-    
-    #Print total noise that was added/subtracted
-    print("Total Noise: ", totalNoise)
+    if(origImg.size[1] != noiseImg.size[1]) or (origImg.size[0] != noiseImg.size[0]):
+        print("The images at the provided paths are different sizes.")
+    else:
+        for i in range(origImg.size[0]):
+            for j in range(origImg.size[1]):
+                origPixel = orig[i,j]
+                noisePixel = noise[i,j]
+                origRGBVals = list(origPixel)
+                noiseRGBVals = list(noisePixel)
+
+                for k in range(len(origRGBVals)):
+                    totalNoise += abs(origRGBVals[k] - noiseRGBVals[k])
+
+    return totalNoise
 
 
-#Examples
-randomNoise(grey, p=1, am=1000) 
+def minimisePerturbation(origPath, savePath, iterationsBeforeGiveUp, startP=1, pStep=0.05, startAm=255, amStep=5, x1=-1,x2=-1,y1=-1,y2=-1):
+    model = dnn.load_DNN()
+    origImg = Image.open(origPath)
+    origClass = dnn.test_image(origPath, model).argmax()
+
+    currentP = startP
+    currentAm = startAm
+
+    #Initialise current min noise as a number larger than possible from any perturbation, such that any result performs better
+    currentMinNoise = 9999999999999
+    currentMinP = -1
+    currentMinAm = -1
+
+    resultFoundP = True
+    resultFoundAm = True
+
+    while(resultFoundP):
+        resultFoundP = False
+
+        while(resultFoundAm):
+            resultFoundAm = False
+            i = 0
+
+            print("Testing P: " , currentP, " Am: " , currentAm)
+
+            while(i < iterationsBeforeGiveUp):
+                imgPer = randomNoise(origImg, p=currentP, am=currentAm, x1=x1, x2=x2, y1=y1, y2=y2)
+                imgPer.save(savePath + '/tmp.ppm')
+                if(dnn.test_image((savePath + '/tmp.ppm'), model).argmax() != origClass):
+                    print("Solution Found")
+                    resultFoundAm = True
+                    resultFoundP = True
+
+                    imgPerNoise = compareNoise(origPath, savePath + '/tmp.ppm')
+                    if(imgPerNoise < currentMinNoise):
+                        print("Solution is current min with Total Noise: " , imgPerNoise)
+                        imgPer.save(savePath + '/currentMin.ppm')
+                        currentMinNoise = imgPerNoise
+                        currentMinP = currentP
+                        currentMinAm = currentAm
+
+                    break;
+                i+=1
+            currentAm -= amStep
+        
+        currentP -= pStep
+        currentP = round(currentP, 8)
+        currentAm = startAm
+        resultFoundAm = True
+
+imgPath = 'images_cropped/00000/00000_00000.ppm'
+savePath = 'D:/Users/eddie/Desktop'
+
+minimisePerturbation(imgPath, savePath, 50)
+    
