@@ -18,7 +18,7 @@ else:
 # get the pixels
 im = image.load_img(IMG_LOCATION, target_size=(40,40)) # open the image
 pixels = image.img_to_array(im) # extracts the pixels
-pixels = [x/.255 for x in pixels]
+pixels /= 255.
 pixels = np.reshape(pixels, newshape=(40, 40, 3))
 pixels = np.expand_dims(pixels, axis=0)
 # print(str(pixels))
