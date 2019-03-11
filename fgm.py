@@ -10,11 +10,11 @@ from PIL import Image
 import argparse
 
 parser = argparse.ArgumentParser(description='Craft adversarial examples')
-parser.add_argument('--img',dest='image_path', type=str, default='images_cropped2/00000/00000_00000.ppm', help='Image path')
+parser.add_argument('--img',dest='image_path', type=str, default='images_cropped/00000/00000_00000.ppm', help='Image path')
 parser.add_argument('--target',dest='target_cls', type=int, default=-1, help='Target class, -1 for minimizing the original class')
 parser.add_argument('--cost',dest='min_cost', type=float, default=0.90, help='Minimum certaintity to stop')
 parser.add_argument('--save',dest='save_as', type=str, default='hacked-img.png', help='Where to save the perturbated image')
-parser.add_argument('--clip',dest='clip_range', type=float, default=0.01, help='How much change to allow [0,1]')
+parser.add_argument('--clip',dest='clip_range', type=float, default=0.1, help='How much change to allow [0,1]')
 parser.add_argument('--learn-rate',dest='learning_rate', type=float, default=0.1, help='Learning rate')
 parser.add_argument('--noises',dest='noises', type=str, default='', help='Where to save the scaled noise')
 
@@ -39,6 +39,9 @@ model_output_layer = model.layers[-1].output
 # Load the image to hack
 original_image = image.img_to_array(image.load_img(IMG_PATH, target_size=(40, 40)))
 img = original_image.copy()
+#
+# im = Image.fromarray(img.astype(np.uint8))
+# im.save(args.save_as)
 
 # Scale the image so all pixel intensities are between [0, 1] as the model expects
 img /= 255.
@@ -59,6 +62,12 @@ max_change_below = img - args.clip_range
 
 # Create a copy of the input image to hack on
 hacked_image = np.copy(img)
+
+# imgh = np.round(hacked_image * 255.)
+# # Save the hacked image!
+# im = Image.fromarray(imgh.astype(np.uint8))
+# im.save(args.save_as)
+# print('Hacked image save as ' + args.save_as)
 
 # How much to update the hacked image in each iteration
 learning_rate = abs(args.learning_rate)
@@ -93,6 +102,8 @@ while cost < abs(args.min_cost):
     # Keras layers behave differently in prediction vs. train modes!
     cost, gradients = grab_cost_and_gradients_from_model([hacked_image, 0])
 
+    print(gradients)
+
     # Move the hacked image one step further towards fooling the model
     hacked_image += gradients * learning_rate
 
@@ -102,6 +113,9 @@ while cost < abs(args.min_cost):
 
     _pred = model.predict(hacked_image)[0]
     cur_pred = list(_pred).index(np.amax(_pred))
+    __pred = _pred * 100
+    np.set_printoptions(precision=4, suppress=True)
+    # print(__pred)
 
     if args.target_cls < 0:
         print(str(i) + ": Likelihood that the image is not the original class: {:.8}%".format(cost * 100))
@@ -109,21 +123,22 @@ while cost < abs(args.min_cost):
         print(str(i) + ': Likelihood that the image is the target class: {:.8}%'.format(cost * 100))
     if cur_pred != true_class:
         print('Predictor is already being fooled!')
+        print('New predicted class: ' + str(cur_pred) + ' with confidence of ' + str(np.amax(_pred) * 100))
         break
-    if i % cost_cp_freq == 0:
-        print(str(abs(last_cost_cp - cost)))
-        if abs(last_cost_cp - cost) < cost_dif_threshold:
-            print('Image seem not to be improving anymore, early termination')
-            break
-        last_cost_cp = cost
+    # if i % cost_cp_freq == 0:
+    #     # print(str(abs(last_cost_cp - cost)))
+    #     if abs(last_cost_cp - cost) < cost_dif_threshold:
+    #         print('Image seem not to be improving anymore, early termination')
+    #         break
+    #     last_cost_cp = cost
     i += 1
     # print(str(model.predict(hacked_image)[0]))
 
 # De-scale the image's pixels from [-1, 1] back to the [0, 255] range
 imgh = hacked_image[0]
-# imgh *= 1.02
 imgh *= 255.
-
+# print(imgh.shape)
+# print(imgh)
 # compare to the original
 dif_img = original_image - imgh
 
@@ -140,14 +155,20 @@ if args.noises:
     im.save(args.noises)
 
 pert = np.sum(np.absolute(dif_img))
-
+# print()
 # print(str(dif_img))
-print('Total perturbation: ' + str(pert))
+# imgh = np.round(imgh)
+print('Total perturbation: ' + str(pert/255))
 
+# print(np.amax(imgh))
 # Save the hacked image!
 im = Image.fromarray(imgh.astype(np.uint8))
 im.save(args.save_as)
-print('Hacked image save as ' + args.save_as)
+print('Hacked image saved as ' + args.save_as)
+
+im = Image.fromarray(dif_img.astype(np.uint8))
+im.save('noise.png')
+print('Noise image saved as ' + 'noise.png')
 
 # save the model
 model_json = model.to_json()
