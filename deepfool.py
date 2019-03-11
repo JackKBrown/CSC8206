@@ -10,7 +10,7 @@ eta = 0.02
 clip_min = 0
 clip_max = 1
 epochs = 100
-min_prob = 0
+min_prob = 0.1
 
 img_path = 'images_cropped/00000/00000_00000.ppm'
 model_path = 'DNN.json'
