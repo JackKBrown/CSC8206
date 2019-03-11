@@ -10,18 +10,18 @@ eta = 0.02
 clip_min = 0
 clip_max = 1
 epochs = 100
-min_prob = 0.1
+min_prob = 0
 
-img_path = 'images_cropped2/00000/00000_00000.ppm'
+img_path = 'images_cropped/00000/00000_00000.ppm'
 model_path = 'DNN.json'
 weights_path = 'DNN_weights.h5'
 
 def _cond(i, z):
-    # print(str(i))
+
     xadv = tf.clip_by_value(x + z * (1 + eta), clip_min, clip_max)
-    y = tf.reshape(model(xadv), [-1])
-    p = tf.reduce_max(y)
-    k = tf.argmax(y)
+    y = tf.reshape(model(xadv), [-1]) # flatten the predictions
+    p = tf.reduce_max(y) # get the max probability value
+    k = tf.argmax(y) # get the index of the predicted class
     return tf.logical_and(tf.less(i, epochs), tf.logical_or(tf.equal(tf.cast(true_class, dtype=tf.int64), k), tf.less(p, min_prob)))
     # return tf.logical_or(tf.equal(tf.cast(true_class, dtype=tf.int64), k), tf.less(p, min_prob))
 
@@ -31,6 +31,8 @@ def _body(i, z):
 
     # get current class probabilities
     labels = model(xadv)[0]
+
+    # labels = tf.Print(labels, [labels], 'labels: ', summarize=43)
 
     # calculate gradients for each class
     gs = [tf.reshape(tf.gradients(labels[i], xadv)[0], [-1])
@@ -91,6 +93,7 @@ num_classes = len(_preds)
 x = tf.Variable(img_in, dtype='float32')
 xflat = len(img.flatten())
 
+
 num_it, noise = tf.while_loop(_cond, _body, [0, tf.zeros_like(x)], back_prop=False)
 
 # xadv = tf.stop_gradient(
@@ -107,6 +110,7 @@ scaled_noise = tf.map_fn(lambda x: ((x - _min) / abs(_max - _min)) * 255, noise)
 sess = tf.Session()
 with sess.as_default():
     K.set_session(sess)
+    writer = tf.summary.FileWriter("output", sess.graph)
     sess.run(tf.global_variables_initializer())
     sess.run(tf.local_variables_initializer())
 
@@ -135,6 +139,13 @@ with sess.as_default():
     # Save the hacked image!
     im = Image.fromarray(xadv.astype(np.uint8))
     im.save('deepfool-img.png')
+
+    # Save the noise!
+    im = Image.fromarray((noise.eval()*255).reshape(40, 40, 3).astype(np.uint8))
+    im.save('deepfool-noise.png')
+
+
+    writer.close()
 
     print('noise max: ' + str(_max.eval()))
     print('noise min: ' + str(_min.eval()))
