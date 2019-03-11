@@ -9,6 +9,8 @@ from keras.layers import Dense, Activation, Flatten
 import matplotlib.pyplot as plt
 from keras.optimizers import SGD
 from keras.optimizers import SGD
+#this is only here as it is the cleanest way to split both labels and features
+from sklearn.model_selection import train_test_split
 
 #this is the file containing the image data
 ORIGINDIR='images_cropped/'
@@ -25,7 +27,8 @@ signs_classes=['00000','00001','00002','00003','00004',
         '00035','00036','00037','00038','00039',
         '00040','00041','00042']
 
-BATCH=19000
+#ls -l images_cropped/*/* | egrep -c '^-' returns 39209
+BATCH=39209
 
 
 
@@ -42,8 +45,13 @@ train_datagen = IDG.flow_from_directory(
 
 
 #fetch a batch of images and labels
-images, labels = next(train_datagen)
-test_images, test_labels = next(train_datagen)
+#images, labels = next(train_datagen)
+#test_images, test_labels = next(train_datagen)
+
+data, labels = next(train_datagen)
+
+images, test_images, labels, test_labels = train_test_split(data, labels, test_size=0.20, random_state=42)
+
 print(images.shape)
 
 print(labels)
