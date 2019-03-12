@@ -7,6 +7,7 @@ from keras import backend as K
 import numpy as np
 import argparse
 
+
 def deepfool_wrap(sess, x, model, eta=0.02):
     class Dummy:
         pass
@@ -58,7 +59,7 @@ def __main__():
 
         # print(adv.shape)
         # print(adv)
-        print(model.predict(adv))
+        # print(model.predict(adv))
 
         _preds = model.predict(adv)[0]
         true_class = list(_preds).index(np.amax(_preds))
@@ -83,8 +84,20 @@ def __main__():
     im = Image.fromarray(scaled_noise.astype(np.uint8))
     im.save(args.noises)
 
+    noise *= 255
+    print('max, min noise: ' + str(np.average(noise)))
     pert = np.sum(np.abs(noise))
     print('Total pert: ' + str(pert))
+
+    import matplotlib.pyplot as plt
+    from scipy.stats import gaussian_kde
+    data = noise.reshape((-1))
+    density = gaussian_kde(data)
+    xs = np.linspace(_min*255, _max*255, 200)
+    density.covariance_factor = lambda: .25
+    density._compute_covariance()
+    plt.plot(xs, density(xs))
+    plt.show()
 
 if __name__=='__main__':
     __main__()
