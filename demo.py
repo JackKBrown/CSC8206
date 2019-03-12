@@ -98,10 +98,6 @@ def __main__():
     
     plt.show()
 
-    #todo
-    #show images all at the end
-    #get output into a nice table
-    
 if __name__ =='__main__':
     __main__()
 
