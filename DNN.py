@@ -72,11 +72,11 @@ def define_model(num_nodes):
     
     return model
 
-def compile_and_fit(images, labels, test_images, test_labels, model):
+def compile_and_fit(images, labels, test_images, test_labels, model, num_epochs):
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
-    model.fit(images, labels, batch_size=32, epochs=10)
+    model.fit(images, labels, batch_size=32, epochs=num_epochs)
     score = model.evaluate(test_images, test_labels, batch_size=32)
     print(score)
     return score
@@ -84,7 +84,7 @@ def compile_and_fit(images, labels, test_images, test_labels, model):
 def __main__():
     images, test_images, labels, test_labels = data_prep()
     model = define_model(256)
-    compile_and_fit(images, labels, test_images, test_labels, model)
+    compile_and_fit(images, labels, test_images, test_labels, model, 10)
 
     #save the model
     model_json = model.to_json()
