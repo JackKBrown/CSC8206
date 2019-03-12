@@ -35,46 +35,42 @@ BATCH=39209
 #######################################################################
 #Data preperation
 ######################################################################
+def data_prep():
+    #IDG lets you pull images from a directory and label them according to the subdir
+    #see keras ImageDataGenerator parameters for more customisability
+    IDG = ImageDataGenerator(rescale=1./255, dtype='float32')
 
-#IDG lets you pull images from a directory and label them according to the subdir
-#see keras ImageDataGenerator parameters for more customisability
-IDG = ImageDataGenerator(rescale=1./255, dtype='float32')
-
-train_datagen = IDG.flow_from_directory(
-        directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
-
-
-#fetch a batch of images and labels
-#images, labels = next(train_datagen)
-#test_images, test_labels = next(train_datagen)
-
-data, labels = next(train_datagen)
-
-images, test_images, labels, test_labels = train_test_split(data, labels, test_size=0.20, random_state=42)
-
-print(images.shape)
-
-print(labels)
+    train_datagen = IDG.flow_from_directory( directory=ORIGINDIR, target_size = (40,40), classes=signs_classes, batch_size=BATCH)
+    #fetch a batch of images and labels
+    #images, labels = next(train_datagen)
+    #test_images, test_labels = next(train_datagen)
+    
+    data, labels = next(train_datagen)
+    
+    images, test_images, labels, test_labels=train_test_split(data, labels, test_size=0.20)
+    
+    print("shape of the image files")
+    print(images.shape)
+    return images, test_images, labels, test_labels
 
 
 #######################################################################
 #DNN model
 ######################################################################
-
-#Define the DNN model used
-model = Sequential()
-
-#input is a 40 by 40 rgb image
-model.add(Flatten(input_shape=(40, 40, 3)))
-model.add(Dense(256, activation='relu'))
-model.add(Dense(256, activation='relu'))
-model.add(Dense(256, activation='relu'))
-#dropout?
-model.add(Dense(43, activation='softmax'))
-
-#these two lines will show a sample image from the dataset
-#plt.imshow(images[0])
-#plt.show()
+def define_model(num_nodes):
+    #Define the DNN model used
+    model = Sequential()
+    
+    #input is a 40 by 40 rgb image
+    model.add(Flatten(input_shape=(40, 40, 3)))
+    #hidden layers
+    model.add(Dense(num_nodes, activation='relu'))
+    model.add(Dense(num_nodes, activation='relu'))
+    model.add(Dense(num_nodes, activation='relu'))
+    #output
+    model.add(Dense(len(signs_classes), activation='softmax'))
+    
+    return model
 
 def compile_and_fit(images, labels, test_images, test_labels, model):
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
@@ -83,13 +79,21 @@ def compile_and_fit(images, labels, test_images, test_labels, model):
     model.fit(images, labels, batch_size=32, epochs=10)
     score = model.evaluate(test_images, test_labels, batch_size=32)
     print(score)
+    return score
 
-compile_and_fit(images, labels, test_images, test_labels, model)
+def __main__():
+    images, test_images, labels, test_labels = data_prep()
+    model = define_model(256)
+    compile_and_fit(images, labels, test_images, test_labels, model)
 
-# save the model
-# model_json = model.to_json()
-# with open("DNN.json", "w") as json_file:
-#     json_file.write(model_json)
-# # serialize weights to HDF5
-# model.save_weights("DNN_weights.h5")
-# print("Saved model to disk")
+    #save the model
+    model_json = model.to_json()
+    with open("DNN.json", "w") as json_file:
+        json_file.write(model_json)
+    #serialize weights to HDF5
+    model.save_weights("DNN_weights.h5")
+    print("Saved model to disk")
+
+if __name__ =='__main__':
+    __main__()
+
