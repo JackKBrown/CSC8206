@@ -16,7 +16,7 @@ def deepfool_wrap(sess, x, model, eta=0.02):
     env.adv_epochs = tf.placeholder(tf.int32, (), name='adv_epochs')
     env.x = tf.placeholder(tf.float32, (None, 40, 40, 3), name='x')
 
-    xadv = deepfool(model, env.x, eta=eta, epochs=3, batch=False, clip_min=0.0, clip_max=1.0, min_prob=0.0)
+    xadv = deepfool(model, env.x, eta=eta, epochs=3, batch=True, clip_min=0.0, clip_max=1.0, min_prob=0.0)
 
     return sess.run(xadv, feed_dict={env.x: x, env.adv_epochs: 3})
 
@@ -24,7 +24,6 @@ def __main__():
 
     parser = argparse.ArgumentParser(description='Craft adversarial examples')
     parser.add_argument('--img',dest='image_path', type=str, default='images_cropped/00000/00000_00000.ppm', help='Image path')
-    parser.add_argument('--cost',dest='min_cost', type=float, default=0.90, help='Minimum certaintity to stop')
     parser.add_argument('--save',dest='save_as', type=str, default='deepfooled-img.png', help='Where to save the perturbated image')
     parser.add_argument('--eta',dest='eta', type=float, default=0.01, help='Eta (Learning rate)')
     parser.add_argument('--noise',dest='noise', type=str, default='deepfool-noise.png', help='Where to save the noise')

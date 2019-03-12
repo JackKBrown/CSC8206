@@ -207,8 +207,7 @@ def _deepfoolx_batch(model, x, epochs, eta, clip_min, clip_max):
         dx = si * bi
         return i+1, z+dx
 
-    _, noise = tf.while_loop(_cond, _body, [0, tf.zeros_like(x)],
-                             name='_deepfoolx_batch', back_prop=False)
+    _, noise = tf.while_loop(_cond, _body, [0, tf.zeros_like(x)], back_prop=False)
     return noise
 
 

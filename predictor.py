@@ -36,5 +36,6 @@ model.load_weights("DNN_weights.h5")
 #print("Loaded model from disk")
 preds = model.predict(pixels)[0]
 # print(str(pixels))
-print(str(preds))
+np.set_printoptions(precision=4, suppress=True)
+print(str(preds*100))
 print('Class id: ' + str(list(preds).index(np.amax(preds))))
