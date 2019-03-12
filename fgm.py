@@ -13,10 +13,12 @@ parser = argparse.ArgumentParser(description='Craft adversarial examples')
 parser.add_argument('--img',dest='image_path', type=str, default='images_cropped/00000/00000_00000.ppm', help='Image path')
 parser.add_argument('--target',dest='target_cls', type=int, default=-1, help='Target class, -1 for minimizing the original class')
 parser.add_argument('--cost',dest='min_cost', type=float, default=0.90, help='Minimum certaintity to stop')
-parser.add_argument('--save',dest='save_as', type=str, default='hacked-img.png', help='Where to save the perturbated image')
 parser.add_argument('--clip',dest='clip_range', type=float, default=0.1, help='How much change to allow [0,1]')
 parser.add_argument('--learn-rate',dest='learning_rate', type=float, default=0.1, help='Learning rate')
+parser.add_argument('--save',dest='save_as', type=str, default='hacked-img.png', help='Where to save the perturbated image')
+parser.add_argument('--noise',dest='noise', type=str, default='', help='Where to save the noise')
 parser.add_argument('--noises',dest='noises', type=str, default='', help='Where to save the scaled noise')
+parser.add_argument('--sign',dest='sign', action='store_true', help='If set, sign(gradients) is used rather than gradients')
 
 args = parser.parse_args()
 
@@ -102,10 +104,11 @@ while cost < abs(args.min_cost):
     # Keras layers behave differently in prediction vs. train modes!
     cost, gradients = grab_cost_and_gradients_from_model([hacked_image, 0])
 
-    print(gradients)
-
     # Move the hacked image one step further towards fooling the model
-    hacked_image += gradients * learning_rate
+    if args.sign:
+        hacked_image += np.sign(gradients) * learning_rate
+    else:
+        hacked_image += gradients * learning_rate
 
     # Ensure that the image doesn't ever change too much to either look funny or to become an invalid image
     hacked_image = np.clip(hacked_image, max_change_below, max_change_above)
@@ -144,7 +147,7 @@ dif_img = original_image - imgh
 
 # do we want the scaled noise?
 if args.noises:
-    print('Printing scaled noise as ' + args.noises)
+    print('Scaled noise image save as ' + args.noises)
     _min = np.amin(dif_img)
     _max = np.amax(dif_img)
 
@@ -166,14 +169,15 @@ im = Image.fromarray(imgh.astype(np.uint8))
 im.save(args.save_as)
 print('Hacked image saved as ' + args.save_as)
 
-im = Image.fromarray(dif_img.astype(np.uint8))
-im.save('noise.png')
-print('Noise image saved as ' + 'noise.png')
+if args.noise:
+    im = Image.fromarray(dif_img.astype(np.uint8))
+    im.save(args.noise)
+    print('Noise image saved as ' + args.noise)
 
 # save the model
 model_json = model.to_json()
-with open("DNN3.json", "w") as json_file:
+with open("DNN.json", "w") as json_file:
     json_file.write(model_json)
 # serialize weights to HDF5
-model.save_weights("DNN_weights3.h5")
+model.save_weights("DNN_weights.h5")
 print("Saved model to disk")
