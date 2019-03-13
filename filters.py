@@ -3,6 +3,8 @@ from keras.preprocessing import image
 from keras.models import model_from_json
 from math import sqrt
 import numpy as np
+import demo as dnn
+import shutil
 
 def modify_val(image_path, value):
 
@@ -24,7 +26,7 @@ def modify_val(image_path, value):
 			
 	im.show()
 	
-def mask(image_path, mask_path, mask_translation, threshold):
+def mask(image_path, mask_path, mask_translation, threshold, min_perturbation):
 
 	# get original image
 	im = Image.open(image_path)
@@ -47,18 +49,22 @@ def mask(image_path, mask_path, mask_translation, threshold):
 	total_diff = 0
 	for x in range(width):
 		for y in range(height):
-			rd = old_pix[x,y][0] - pix[x,y][0]
-			gd = old_pix[x,y][1] - pix[x,y][1]
-			bd = old_pix[x,y][2] - pix[x,y][2]
+			rd = abs(old_pix[x,y][0] - pix[x,y][0])
+			gd = abs(old_pix[x,y][1] - pix[x,y][1])
+			bd = abs(old_pix[x,y][2] - pix[x,y][2])
 			
-			total_diff += sqrt(pow(rd,2)+pow(gd,2)+pow(bd,2))
+			total_diff += rd + gd + bd
 			
 		
-	max_diff = 706676.7294881183 # white to black image
-	diff_percentage = total_diff * 100.0 / max_diff
-	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
+	#max_diff = 706676.7294881183 # white to black image
+	#diff_percentage = total_diff * 100.0 / max_diff
+	#print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	#im.show()
-	im.save("masked_opaque.ppm")
+	
+	if total_diff < min_perturbation:
+		im.save("masked_opaque.ppm")
+		
+	return total_diff
 	
 def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 	# get original image
@@ -85,7 +91,7 @@ def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 				
 	max_diff = 706676.7294881183 # white to black image
 	diff_percentage = total_diff * 100.0 / max_diff
-	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
+	#print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	
 	#im.show()
 	im.save("masked_transparency.ppm")
@@ -148,8 +154,7 @@ def translate_img(image_path, x_translation, y_translation):
 	return pix
 
 ################	
-#modify_val('images_cropped/10859.ppm', -100)
-mask_blend('images_cropped/00000/00000_00011.ppm', 'images_noise/circle_mask.png', (10, 0), 150)
+
 def extract_noise_mask(orig_image_path, hacked_image_path):
 	im1 = image.load_img(orig_image_path)  # open the image
 	pixels1 = image.img_to_array(im1)  # extracts the pixels
@@ -161,32 +166,54 @@ def extract_noise_mask(orig_image_path, hacked_image_path):
 	for p1, p2 in zip(pixels1, pixels2):
 		noise += p1 - p2
 
-def predict(img_path):
-	im = image.load_img(img_path, target_size=(40,40)) # open the image
-	pixels = image.img_to_array(im) # extracts the pixels
-	pixels = [x/.255 for x in pixels]
-	pixels = np.reshape(pixels, newshape=(40, 40, 3))
-	pixels = np.expand_dims(pixels, axis=0)
+def diff_images(path_orig, path_mod):
+	im_orig = Image.open(path_orig)
+	pix_orig = im_orig.load()
+	pix_mod = Image.open(path_mod).load()
+	width, height = im_orig.size
 	
-	# load json and create model
-	json_file = open('DNN.json', 'r')
-	loaded_model_json = json_file.read()
-	json_file.close()
-	model = model_from_json(loaded_model_json)
-	# load weights into new model
-	model.load_weights("DNN_weights.h5")
-	#print("Loaded model from disk")
-	pred = model.predict(pixels)
+	total_difference = 0
+	
+	for x in range(width):
+		for y in range(height):
+			total_difference = total_difference + (pix_orig[x,y][0] - pix_mod[x,y][0]) + (pix_orig[x,y][1] - pix_mod[x,y][1]) + (pix_orig[x,y][2] - pix_mod[x,y][2])
+	
+	
+	return total_difference
 
-	print('Class id: ', pred[0][1])
-	return int(pred[0][1])
-################	
-#modify_val('images_cropped/10859.ppm', -100)
-class_type = predict('images_orig/00000/00000_00000.ppm')
+def mask_compute(img_orig, img_mask, out_path, model):
+	class_type = int(dnn.test_image(img_orig, model).argmax())
+	min_perturbation = 9999999999999999
+
+	for x in range(-20, 20):
+		for y in range(-20, 20):
+			print((x,y), "\t Current minimum perturbation: ", min_perturbation)
+			for i in reversed(range(255)):
+				pert = mask(img_orig, img_mask, (x, y), i, min_perturbation)
+				if pert >= min_perturbation:
+					break
+				if int(dnn.test_image('masked_opaque.ppm', model).argmax()) is not class_type:
+					min_perturbation = pert
+					shutil.copyfile('masked_opaque.ppm', out_path)
+					break
+	
+	return min_perturbation
+
+def compare_images(img_orig, img_pert, model):
+	orig_class = dnn.test_image(img_orig, model).argmax()
+	pert_class = dnn.test_image(img_pert, model).argmax()
+	
+	diff = diff_images(img_orig, img_pert)
+	
+	print("Original class: ", orig_class, "\tModified class: ", pert_class, "\tDifference: ", diff)
+	return orig_class, pert_class
+################
+
+model = dnn.load_DNN()
+mask_path = 'images_noise/circle_mask.png'
+img_orig = ('images_demo/00000/00001_00006.ppm', 'images_demo/00004/00034_00015.ppm', 'images_demo/00008/00004_00010.ppm', 'images_demo/00023/00013_00009.ppm', 'images_demo/00032/00000_00003.ppm')
+out_img = 'masked_min.ppm'
 
 
-for i in reversed(range(255)):
-	mask('images_cropped/00000/00000_00000.ppm', 'images_noise/circle_mask.png', (0, 0), i)
-	if predict('masked_opaque.ppm') is not class_type:
-		Image.open('masked_opaque.ppm').show()
-		break
+mask_compute(img_orig[4], mask_path, out_img, model)
+compare_images(img_orig[4], out_img, model)
