@@ -108,6 +108,7 @@ def minimisePerturbation(origPath, savePath, iterationsBeforeGiveUp, startP=1, p
     model = dnn.load_DNN()
     origImg = Image.open(origPath)
     origClass = dnn.test_image(origPath, model).argmax()
+    print("Original Class: " , origClass)
 
     #Set current p and am as the start p and am respectively
     currentP = startP
@@ -175,10 +176,14 @@ def minimisePerturbation(origPath, savePath, iterationsBeforeGiveUp, startP=1, p
         #Reset am ready for next p value testing
         currentAm = startAm
         resultFoundAm = True
+		
+    print("Minimum Solution Found: " , currentMinNoise , " with parameters p: " , currentMinP , " am: ", currentMinAm)
 
 #The code to run the above defined functions
-imgPath = 'images_cropped/00000/00000_00000.ppm'
-savePath = 'D:/Users/eddie/Desktop'
+#To run the code, first setup these paths and decide number of iterations to try before 'giving up' on a set of parameters
+imgPath = 'INPUT IMG PATH'
+savePath = 'THE PATH TO SAVE OUTPUT'
+numOfIterationsTillGiveUp = 200
 
-minimisePerturbation(imgPath, savePath, 50)
+minimisePerturbation(imgPath, savePath, numOfIterationsTillGiveUp)
     
