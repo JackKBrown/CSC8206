@@ -183,7 +183,18 @@ def diff_images(path_orig, path_mod):
 
 def mask_compute(img_orig, img_mask, out_path, model):
 	class_type = int(dnn.test_image(img_orig, model).argmax())
-	min_perturbation = 9999999999999999
+	
+	min_perturbation = 999999999999999999
+	
+	# for optimisation, as a central pixel will likely require less noise than a corner one for misclassification
+	for i in reversed(range(255)):
+		pert = mask(img_orig, img_mask, (0,0), i, min_perturbation)
+		if pert >= min_perturbation:
+			break
+		if int(dnn.test_image('masked_opaque.ppm', model).argmax()) is not class_type:
+			min_perturbation = pert
+			shutil.copyfile('masked_opaque.ppm', out_path)
+			break
 
 	for x in range(-20, 21):
 		for y in range(-20, 21):
@@ -215,5 +226,5 @@ img_orig = ('images_demo/00000/00001_00006.ppm', 'images_demo/00004/00034_00015.
 out_img = 'masked_min.ppm'
 
 
-mask_compute(img_orig[3], mask_path, out_img, model)
-compare_images(img_orig[3], out_img, model)
+mask_compute(img_orig[0], mask_path, out_img, model)
+compare_images(img_orig[0], out_img, model)
