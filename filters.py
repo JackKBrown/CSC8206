@@ -185,8 +185,8 @@ def mask_compute(img_orig, img_mask, out_path, model):
 	class_type = int(dnn.test_image(img_orig, model).argmax())
 	min_perturbation = 9999999999999999
 
-	for x in range(-20, 20):
-		for y in range(-20, 20):
+	for x in range(-20, 21):
+		for y in range(-20, 21):
 			print((x,y), "\t Current minimum perturbation: ", min_perturbation)
 			for i in reversed(range(255)):
 				pert = mask(img_orig, img_mask, (x, y), i, min_perturbation)
@@ -215,5 +215,5 @@ img_orig = ('images_demo/00000/00001_00006.ppm', 'images_demo/00004/00034_00015.
 out_img = 'masked_min.ppm'
 
 
-mask_compute(img_orig[4], mask_path, out_img, model)
-compare_images(img_orig[4], out_img, model)
+mask_compute(img_orig[3], mask_path, out_img, model)
+compare_images(img_orig[3], out_img, model)
