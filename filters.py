@@ -1,7 +1,6 @@
 from PIL import Image
 from keras.preprocessing import image
 from keras.models import model_from_json
-from math import sqrt
 import numpy as np
 import demo as dnn
 import shutil
@@ -54,18 +53,13 @@ def mask(image_path, mask_path, mask_translation, threshold, min_perturbation):
 			bd = abs(old_pix[x,y][2] - pix[x,y][2])
 			
 			total_diff += rd + gd + bd
-			
-		
-	#max_diff = 706676.7294881183 # white to black image
-	#diff_percentage = total_diff * 100.0 / max_diff
-	#print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
-	#im.show()
 	
 	if total_diff < min_perturbation:
 		im.save("masked_opaque.ppm")
 		
 	return total_diff
 	
+# unused as the effort switched to the opaque masking method
 def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 	# get original image
 	im = Image.open(image_path)
@@ -93,38 +87,8 @@ def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
 	diff_percentage = total_diff * 100.0 / max_diff
 	#print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
 	
-	#im.show()
-	im.save("masked_transparency.ppm")
-	
-	
-def mask_blend(image_path, mask_path, mask_translation, mask_transparency):
-	# get original image
-	im = Image.open(image_path)
-	pix = im.load()
-	
-	# to calculate the difference later
-	old_pix = Image.open(image_path).load()
-	
-	# get image mask
-	mask_pix = translate_img(mask_path, mask_translation[0], mask_translation[1])
-	
-	width, height = im.size
-	total_diff = 0
-	for x in range(width):
-		for y in range(height):
-			a_mask = mask_transparency / 255
-			r = mask_pix[x,y][0] * a_mask + pix[x,y][0] * (1 - a_mask)
-			g = mask_pix[x,y][1] * a_mask + pix[x,y][1] * (1 - a_mask)
-			b = mask_pix[x,y][2] * a_mask + pix[x,y][2] * (1 - a_mask)
-			
-			total_diff += sqrt(pow(pix[x,y][0] - r,2)+pow(pix[x,y][1] - g,2)+pow(pix[x,y][2] - b,2))
-			#pix[x,y] = (int(r),int(g),int(b))
-				
-	max_diff = 706676.7294881183 # white to black image
-	diff_percentage = total_diff * 100.0 / max_diff
-	print("Total difference: ", diff_percentage, "%\t(absolute value:", total_diff, ")")
-	
 	im.show()
+	im.save("masked_transparency.ppm")
 	
 	
 def translate_img(image_path, x_translation, y_translation):
@@ -153,18 +117,6 @@ def translate_img(image_path, x_translation, y_translation):
 	
 	return pix
 
-################	
-
-def extract_noise_mask(orig_image_path, hacked_image_path):
-	im1 = image.load_img(orig_image_path)  # open the image
-	pixels1 = image.img_to_array(im1)  # extracts the pixels
-
-	im2 = image.load_img(hacked_image_path)  # open the image
-	pixels2 = image.img_to_array(im2)  # extracts the pixels
-
-	noise = []
-	for p1, p2 in zip(pixels1, pixels2):
-		noise += p1 - p2
 
 def diff_images(path_orig, path_mod):
 	im_orig = Image.open(path_orig)
@@ -176,7 +128,7 @@ def diff_images(path_orig, path_mod):
 	
 	for x in range(width):
 		for y in range(height):
-			total_difference = total_difference + (pix_orig[x,y][0] - pix_mod[x,y][0]) + (pix_orig[x,y][1] - pix_mod[x,y][1]) + (pix_orig[x,y][2] - pix_mod[x,y][2])
+			total_difference = total_difference + abs(pix_orig[x,y][0] - pix_mod[x,y][0]) + abs(pix_orig[x,y][1] - pix_mod[x,y][1]) + abs(pix_orig[x,y][2] - pix_mod[x,y][2])
 	
 	
 	return total_difference
@@ -218,13 +170,13 @@ def compare_images(img_orig, img_pert, model):
 	
 	print("Original class: ", orig_class, "\tModified class: ", pert_class, "\tDifference: ", diff)
 	return orig_class, pert_class
+	
 ################
 
 model = dnn.load_DNN()
 mask_path = 'images_noise/circle_mask.png'
 img_orig = ('images_demo/00000/00001_00006.ppm', 'images_demo/00004/00034_00015.ppm', 'images_demo/00008/00004_00010.ppm', 'images_demo/00023/00013_00009.ppm', 'images_demo/00032/00000_00003.ppm')
 out_img = 'masked_min.ppm'
-
 
 mask_compute(img_orig[0], mask_path, out_img, model)
 compare_images(img_orig[0], out_img, model)
