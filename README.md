@@ -15,6 +15,6 @@ demo.py - module for running the DNN and when run contains a demo for image 0000
 images_* - these folders are full of the images used to train the model these are sourced from the institute for neuroinformatics http://benchmark.ini.rub.de
 
 random_noise.py - file containing the functions to define and run the random_noise algorithm. See code comments for more details
-				- to run random_noise algorithm, first change the file paths at the bottom of the code to work for your example, then jrun to generate min perturbation for your example
+				- to run random_noise algorithm, first change the file paths at the bottom of the code to work for your example, then run to generate min perturbation for your example
 				
 This repository is for educational purposes.
